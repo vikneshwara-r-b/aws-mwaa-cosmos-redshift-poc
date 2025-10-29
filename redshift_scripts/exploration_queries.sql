@@ -7,7 +7,7 @@ SELECT * FROM sales_dw.public.dim_user LIMIT 10;
 -- View certain records from the fact_sales_category table
 SELECT * FROM sales_dw.public.fact_sales_category LIMIT 10; 
 
--- Total maximum sales under a particular category
+-- Top Category-wise total sales
 SELECT category,SUM(sales_amount) as total_sales
 FROM sales_dw.public.fact_sales_category
 GROUP BY category
