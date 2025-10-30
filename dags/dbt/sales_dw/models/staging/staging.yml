@@ -1,6 +1,1 @@
 version: 2
-
-sources:
-  - name: public
-    tables:
-      - name: sales

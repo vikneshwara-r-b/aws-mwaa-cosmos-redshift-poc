@@ -32,11 +32,24 @@ clean-targets:         # directories to be removed by `dbt clean`
 # In this example config, we tell dbt to build all models in the example/
 # directory as views. These settings can be overridden in the individual model
 # files using the `{{ config(...) }}` macro.
-# models:
-#   sales_dw:
-#     # Config indicated by + and applies to all files under models/example/
-#     example:
-#       +materialized: view
+# Configure models with documentation settings
+models:
+  sales_dw:
+    # Staging models as views for quick transformation
+    staging:
+      +materialized: view
+      +docs:
+        show: true
+    # Dimension models as tables for better performance
+    dimensions:
+      +materialized: table
+      +docs:
+        show: true
+    # Fact models as tables for analytics workloads
+    facts:
+      +materialized: table
+      +docs:
+        show: true
 
 # Configuring seeds
 # Full documentation: https://docs.getdbt.com/docs/building-a-dbt-project/seeds

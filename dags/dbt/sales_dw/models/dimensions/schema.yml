@@ -1,0 +1,58 @@
+version: 2
+
+models:
+  - name: dim_product
+    description: "Product dimension table containing unique product information and attributes"
+    columns:
+      - name: product_id
+        description: "Unique identifier for each product, serves as primary key"
+        tests:
+          - unique
+          - not_null
+      - name: product_name
+        description: "Official name/title of the product as displayed to customers"
+        tests:
+          - not_null
+      - name: category
+        description: "Product category hierarchy with levels separated by pipes (|). Example: 'Electronics|Computers|Laptops'"
+      - name: about_product
+        description: "Comprehensive product description including features, specifications, and key selling points"
+      - name: img_link
+        description: "URL to the primary product image used for display purposes"
+      - name: product_link
+        description: "Direct URL link to the product's detail page on the website"
+
+  - name: dim_user
+    description: "User dimension table containing unique customer/reviewer information"
+    columns:
+      - name: user_id
+        description: "Unique identifier for each user/customer, serves as primary key"
+        tests:
+          - unique
+          - not_null
+      - name: user_name
+        description: "Display name or username of the customer/reviewer"
+        tests:
+          - not_null
+
+  - name: dim_rating
+    description: "Rating dimension table linking products to users with their rating information"
+    columns:
+      - name: product_id
+        description: "Foreign key reference to dim_product.product_id"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_product')
+              field: product_id
+      - name: user_id
+        description: "Foreign key reference to dim_user.user_id"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_user')
+              field: user_id
+      - name: rating
+        description: "Numerical rating given by user (1-5 scale, converted from string to DECIMAL(2,1))"
+      - name: rating_count
+        description: "Total number of ratings received by this product (converted from string to INTEGER, comma separators removed)"
