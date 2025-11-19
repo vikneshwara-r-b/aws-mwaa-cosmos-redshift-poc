@@ -1,45 +1,148 @@
-Overview
-========
+# AWS MWAA Cosmos Redshift POC
 
-Welcome to Astronomer! This project was generated after you ran 'astro dev init' using the Astronomer CLI. This readme describes the contents of the project, as well as how to run Apache Airflow on your local machine.
+A proof-of-concept project demonstrating integration between AWS Managed Apache Airflow (MWAA), Astronomer Cosmos, dbt, and Redshift Serverless for data warehousing.
 
-Project Contents
-================
+## Overview
 
-Your Astro project contains the following files and folders:
+This project showcases a modern data pipeline architecture using:
+- **AWS MWAA** for orchestration with Apache Airflow
+- **Astronomer Cosmos** for seamless dbt integration
+- **dbt** for data transformations
+- **Redshift Serverless** as the data warehouse
+- **Terraform** for infrastructure as code
 
-- dags: This folder contains the Python files for your Airflow DAGs. By default, this directory includes one example DAG:
-    - `example_astronauts`: This DAG shows a simple ETL pipeline example that queries the list of astronauts currently in space from the Open Notify API and prints a statement for each astronaut. The DAG uses the TaskFlow API to define tasks in Python, and dynamic task mapping to dynamically print a statement for each astronaut. For more on how this DAG works, see our [Getting started tutorial](https://www.astronomer.io/docs/learn/get-started-with-airflow).
-- Dockerfile: This file contains a versioned Astro Runtime Docker image that provides a differentiated Airflow experience. If you want to execute other commands or overrides at runtime, specify them here.
-- include: This folder contains any additional files that you want to include as part of your project. It is empty by default.
-- packages.txt: Install OS-level packages needed for your project by adding them to this file. It is empty by default.
-- requirements.txt: Install Python packages needed for your project by adding them to this file. It is empty by default.
-- plugins: Add custom or community plugins for your project to this file. It is empty by default.
-- airflow_settings.yaml: Use this local-only file to specify Airflow Connections, Variables, and Pools instead of entering them in the Airflow UI as you develop DAGs in this project.
+## Technology Stack
 
-Deploy Your Project Locally
-===========================
+| Component | Version | Purpose |
+|-----------|---------|---------|
+| **AWS MWAA** | Airflow 2.7.2 | Managed workflow orchestration |
+| **astronomer-cosmos** | 1.11.1 | dbt + Airflow integration |
+| **dbt-redshift** | 1.7.7 | Data transformation framework |
+| **Redshift Serverless** | Latest | Data warehouse |
+| **Python** | 3.11 | Runtime environment |
+| **Terraform** | ≥ 1.13.0 | Infrastructure provisioning |
 
-Start Airflow on your local machine by running 'astro dev start'.
+## Project Structure
 
-This command will spin up five Docker containers on your machine, each for a different Airflow component:
+```
+aws-mwaa-cosmos-redshift-poc/
+├── dags/                          # Airflow DAG definitions
+│   ├── sales_data_ingest_and_transform.py
+│   └── dbt/sales_dw/             # dbt project
+│       ├── models/               # dbt models (staging, dimensions, facts)
+│       └── seeds/                # Sample data
+├── mwaa_config_scripts/          # MWAA configuration
+│   ├── requirements.txt          # Python dependencies
+│   └── startup_script.sh         # Environment setup script
+├── terraform/                    # Infrastructure as code
+│   ├── *.tf                     # Terraform configurations
+│   └── README.md                # Detailed Terraform docs
+├── redshift_scripts/            # SQL scripts
+└── README.md                    # This file
+```
 
-- Postgres: Airflow's Metadata Database
-- Scheduler: The Airflow component responsible for monitoring and triggering tasks
-- DAG Processor: The Airflow component responsible for parsing DAGs
-- API Server: The Airflow component responsible for serving the Airflow UI and API
-- Triggerer: The Airflow component responsible for triggering deferred tasks
+## Quick Start
 
-When all five containers are ready the command will open the browser to the Airflow UI at http://localhost:8080/. You should also be able to access your Postgres Database at 'localhost:5432/postgres' with username 'postgres' and password 'postgres'.
+### Local Development
 
-Note: If you already have either of the above ports allocated, you can either [stop your existing Docker containers or change the port](https://www.astronomer.io/docs/astro/cli/troubleshoot-locally#ports-are-not-available-for-my-local-airflow-webserver).
+1. **Prerequisites**
+   ```bash
+   # Install Astronomer CLI
+   brew install astro
+   
+   # Verify installation
+   astro version
+   ```
 
-Deploy Your Project to Astronomer
-=================================
+2. **Start Local Airflow**
+   ```bash
+   astro dev start
+   ```
+   
+   This spins up Docker containers for:
+   - Postgres (metadata database)
+   - Scheduler
+   - Webserver (http://localhost:8080)
+   - Triggerer
 
-If you have an Astronomer account, pushing code to a Deployment on Astronomer is simple. For deploying instructions, refer to Astronomer documentation: https://www.astronomer.io/docs/astro/deploy-code/
+3. **Access Airflow UI**
+   - URL: http://localhost:8080
+   - Username: `admin`
+   - Password: `admin`
 
-Contact
-=======
+### AWS Deployment
 
-The Astronomer CLI is maintained with love by the Astronomer team. To report a bug or suggest a change, reach out to our support.
+For deploying to AWS MWAA, see comprehensive instructions in:
+- **[TERRAFORM_SETUP.md](TERRAFORM_SETUP.md)** - Quick deployment guide
+- **[terraform/README.md](terraform/README.md)** - Detailed Terraform documentation
+
+## Key Features
+
+- ✅ **Astronomer Cosmos Integration** - Native dbt support in Airflow
+- ✅ **Redshift Serverless** - Scalable data warehouse
+- ✅ **Infrastructure as Code** - Complete Terraform setup
+- ✅ **Automated Deployments** - CI/CD ready
+- ✅ **Version Pinning** - Reproducible environments
+
+## DAGs
+
+### sales_data_ingest_and_transform
+Main pipeline that:
+1. Loads seed data into Redshift
+2. Runs dbt transformations (staging → dimensions → facts)
+3. Tests data quality
+
+## Development
+
+### Adding Dependencies
+
+1. Update `requirements.txt` for Airflow packages
+2. Update `mwaa_config_scripts/requirements.txt` for MWAA
+3. Restart local environment:
+   ```bash
+   astro dev restart
+   ```
+
+### Modifying dbt Models
+
+1. Edit models in `dags/dbt/sales_dw/models/`
+2. Test locally:
+   ```bash
+   cd dags/dbt/sales_dw
+   dbt run
+   ```
+3. Changes are automatically picked up by Cosmos
+
+## Troubleshooting
+
+### dbt Not Found
+If you see "dbt executable not found":
+- Verify `startup_script.sh` has correct dbt version (1.7.7)
+- Check MWAA worker logs in CloudWatch
+
+### Cosmos Version Issues
+Ensure astronomer-cosmos 1.11.1 is specified in requirements.txt - older versions may have compatibility issues with dbt 1.7.x
+
+### Connection Issues
+Verify Redshift connection in Airflow:
+- Connection ID: `redshift_default`
+- Type: Amazon Redshift
+- Host/Port: From Terraform outputs
+
+## Resources
+
+- [AWS MWAA Documentation](https://docs.aws.amazon.com/mwaa/)
+- [Astronomer Cosmos](https://astronomer.github.io/astronomer-cosmos/)
+- [dbt Documentation](https://docs.getdbt.com/)
+- [Astronomer CLI](https://www.astronomer.io/docs/astro/cli/overview)
+
+## Support
+
+For issues or questions:
+1. Check [TERRAFORM_SETUP.md](TERRAFORM_SETUP.md) troubleshooting section
+2. Review CloudWatch logs for MWAA
+3. Consult AWS MWAA documentation
+
+## License
+
+This is a proof-of-concept project for demonstration purposes.

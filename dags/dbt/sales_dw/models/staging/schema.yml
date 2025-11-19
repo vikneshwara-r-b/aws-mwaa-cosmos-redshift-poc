@@ -1,0 +1,80 @@
+version: 2
+
+sources:
+  - name: public
+    description: "Public schema containing raw sales data"
+    tables:
+      - name: sales
+        description: "Raw sales data containing product information, user details, and reviews"
+        columns:
+          - name: product_id
+            description: "Unique identifier for each product"
+            tests:
+              - not_null
+          - name: product_name
+            description: "Display name of the product"
+          - name: category
+            description: "Product category hierarchy separated by pipes (|)"
+          - name: discounted_price
+            description: "Current selling price after discount (format: ₹X,XXX)"
+          - name: actual_price
+            description: "Original price before discount (format: ₹X,XXX)"
+          - name: discount_percentage
+            description: "Percentage discount offered on the product"
+          - name: rating
+            description: "Average product rating (1-5 scale)"
+          - name: rating_count
+            description: "Number of ratings received for the product"
+          - name: about_product
+            description: "Detailed product description and features"
+          - name: user_id
+            description: "Comma-separated list of user IDs who reviewed the product"
+          - name: user_name
+            description: "Comma-separated list of user names who reviewed the product"
+          - name: review_id
+            description: "Unique identifier for the product review"
+          - name: review_title
+            description: "Title/headline of the user review"
+          - name: review_content
+            description: "Full text content of the user review"
+          - name: img_link
+            description: "URL link to the product image"
+          - name: product_link
+            description: "URL link to the product page"
+
+models:
+  - name: stg_sales
+    description: "Staging model that normalizes sales data by splitting comma-separated user information into individual rows"
+    columns:
+      - name: product_id
+        description: "Unique identifier for each product from the source data"
+      - name: product_name
+        description: "Display name of the product, cleaned from source"
+      - name: category
+        description: "Product category hierarchy (pipe-separated levels)"
+      - name: discounted_price
+        description: "Current selling price with currency symbol (₹X,XXX format)"
+      - name: actual_price
+        description: "Original price before discount with currency symbol (₹X,XXX format)"
+      - name: discount_percentage
+        description: "Discount percentage as string (XX% format)"
+      - name: rating
+        description: "Average product rating as string (X.X format)"
+      - name: rating_count
+        description: "Total number of ratings as string"
+      - name: about_product
+        description: "Detailed product description and key features"
+      - name: user_id
+        description: "Individual user ID extracted from comma-separated list"
+      - name: user_name
+        description: "Individual user name corresponding to the user_id"
+      - name: review_id
+        description: "Review identifier (only populated for first user to avoid duplication)"
+      - name: review_title
+        description: "Review title (only populated for first user to avoid duplication)"
+      - name: review_content
+        description: "Review content (only populated for first user to avoid duplication)"
+      - name: img_link
+        description: "URL to the product image"
+      - name: product_link
+        description: "URL to the product detail page"

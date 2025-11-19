@@ -1,0 +1,41 @@
+version: 2
+
+models:
+  - name: fact_sales_category
+    description: "Fact table containing sales amounts aggregated by user and product category"
+    columns:
+      - name: user_id
+        description: "Foreign key reference to dim_user.user_id representing the purchasing customer"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_user')
+              field: user_id
+      - name: category
+        description: "Individual product category level extracted from pipe-separated hierarchy (e.g., 'Electronics', 'Computers', 'Laptops')"
+        tests:
+          - not_null
+      - name: sales_amount
+        description: "Total sales amount in rupees for this user-category combination (converted from ₹X,XXX format to DECIMAL)"
+        tests:
+          - not_null
+
+  - name: fact_product_rating
+    description: "Fact table containing aggregated rating metrics by product"
+    columns:
+      - name: product_id
+        description: "Foreign key reference to dim_product.product_id"
+        tests:
+          - unique
+          - not_null
+          - relationships:
+              to: ref('dim_product')
+              field: product_id
+      - name: product_name
+        description: "Product name for easier identification and reporting (denormalized from dim_product)"
+        tests:
+          - not_null
+      - name: avg_rating
+        description: "Average rating across all users for this product, rounded to 2 decimal places (scale: 1.00-5.00)"
+        tests:
+          - not_null
