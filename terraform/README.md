@@ -26,6 +26,82 @@ This setup creates:
 
 **Note**: MWAA uses SERVICE mode for endpoint management - AWS automatically creates and manages the required VPC endpoints for Airflow services.
 
+## Architecture Diagram
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│                         AWS Cloud (us-east-1)                               │
+│                                                                              │
+│  ┌────────────────────────────────────────────────────────────────────┐   │
+│  │                    VPC (10.0.0.0/16)                                │   │
+│  │                                                                      │   │
+│  │  ┌─────────────────────────┐   ┌──────────────────────────────┐   │   │
+│  │  │   Public Subnets (2)    │   │   Private Subnets (2)        │   │   │
+│  │  │   - 10.0.1.0/24         │   │   - 10.0.10.0/24             │   │   │
+│  │  │   - 10.0.2.0/24         │   │   - 10.0.20.0/24             │   │   │
+│  │  │                         │   │                              │   │   │
+│  │  │  ┌─────────────────┐   │   │   ┌────────────────────┐    │   │   │
+│  │  │  │ NAT Gateway     │   │   │   │ MWAA Environment   │    │   │   │
+│  │  │  │ (Single EIP)    │   │   │   │  - Airflow 2.7.2   │    │   │   │
+│  │  │  └─────────────────┘   │   │   │  - Cosmos 1.11.1   │    │   │   │
+│  │  │          │              │   │   │  - mw1.small       │    │   │   │
+│  │  │          │              │   │   │  - 1-2 workers     │    │   │   │
+│  │  │  ┌───────▼──────┐      │   │   └────────────────────┘    │   │   │
+│  │  │  │ Internet     │      │   │            │                 │   │   │
+│  │  │  │ Gateway      │      │   │            │                 │   │   │
+│  │  │  └──────────────┘      │   │   ┌────────▼───────────┐    │   │   │
+│  │  │                         │   │   │ Redshift Serverless│    │   │   │
+│  │  └─────────────────────────┘   │   │  - Namespace       │    │   │   │
+│  │              │                  │   │  - Workgroup       │    │   │   │
+│  │              │                  │   │  - sales_dw DB     │    │   │   │
+│  │              │                  │   │  - 8 RPUs          │    │   │   │
+│  │              │                  │   └────────────────────┘    │   │   │
+│  │              │                  │                              │   │   │
+│  │       ┌──────▼──────────┐      │       ┌────────────────┐    │   │   │
+│  │       │ S3 VPC Endpoint │◄─────┼───────│ Route Tables   │    │   │   │
+│  │       │  (Gateway)      │      │       │  - Public RT   │    │   │   │
+│  │       └─────────────────┘      │       │  - Private RT  │    │   │   │
+│  │                                 │       └────────────────┘    │   │   │
+│  └──────────────────────────────────────────────────────────────┘   │   │
+│                                                                       │   │
+│  ┌──────────────────────────────────────────────────────────────┐   │   │
+│  │                    S3 Bucket (MWAA)                           │   │   │
+│  │  - DAGs, requirements.txt, startup.sh                        │   │   │
+│  │  - Versioning enabled, AES256 encrypted                      │   │   │
+│  └──────────────────────────────────────────────────────────────┘   │   │
+│                                                                       │   │
+│  ┌──────────────────────────────────────────────────────────────┐   │   │
+│  │                   AWS Secrets Manager                         │   │   │
+│  │  - Redshift admin credentials                                │   │   │
+│  └──────────────────────────────────────────────────────────────┘   │   │
+│                                                                       │   │
+│  ┌──────────────────────────────────────────────────────────────┐   │   │
+│  │                      IAM Roles                                │   │   │
+│  │  ┌────────────────────┐     ┌────────────────────────┐      │   │   │
+│  │  │ MWAA Execution     │     │ Redshift Serverless    │      │   │   │
+│  │  │  - S3 Access       │     │  - S3 Access           │      │   │   │
+│  │  │  - CloudWatch Logs │     │                        │      │   │   │
+│  │  │  - SQS/KMS         │     │                        │      │   │   │
+│  │  │  - Redshift Access │     │                        │      │   │   │
+│  │  └────────────────────┘     └────────────────────────┘      │   │   │
+│  └──────────────────────────────────────────────────────────────┘   │   │
+│                                                                       │   │
+│  ┌──────────────────────────────────────────────────────────────┐   │   │
+│  │                    Security Groups                            │   │   │
+│  │  - MWAA SG: Self-referencing, all egress                     │   │   │
+│  │  - Redshift SG: Port 5439 from MWAA, all egress             │   │   │
+│  └──────────────────────────────────────────────────────────────┘   │   │
+└───────────────────────────────────────────────────────────────────────────┘
+
+Traffic Flow:
+─────────────
+1. User → Airflow UI (Public webserver via HTTPS)
+2. MWAA → S3 (via VPC Endpoint, no internet)
+3. MWAA → Redshift (via Security Group rules, port 5439)
+4. MWAA → Internet (via NAT Gateway for pip installs, API calls)
+5. Redshift → S3 (via VPC Endpoint for COPY/UNLOAD)
+```
+
 ## Prerequisites
 
 Before deploying, ensure you have:
