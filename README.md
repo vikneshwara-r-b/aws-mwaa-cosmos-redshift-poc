@@ -38,6 +38,7 @@ aws-mwaa-cosmos-redshift-poc/
 │   ├── *.tf                     # Terraform configurations
 │   └── README.md                # Detailed Terraform docs
 ├── redshift_scripts/            # SQL scripts
+├── data_warehouse_er_diagram.md # Data warehouse schema & ER diagram
 └── README.md                    # This file
 ```
 
@@ -87,6 +88,30 @@ Main pipeline that:
 1. Loads seed data into Redshift
 2. Runs dbt transformations (staging → dimensions → facts)
 3. Tests data quality
+
+For complete data model and table relationships, see: 📊 **[data_warehouse_er_diagram.md](data_warehouse_er_diagram.md)**
+
+## Data Model
+
+The project implements a **Medallion Architecture** with Silver and Gold layers in Redshift:
+
+### 🥈 Silver Layer (Staging)
+- **stg_sales**: Cleaned and validated sales data with 17 attributes
+
+### 🥇 Gold Layer (Analytics-Ready)
+
+**Dimension Tables** (Master Data):
+- **dim_product**: Product catalog with unique product information
+- **dim_user**: User/customer master data
+- **dim_rating**: Bridge table linking products and users with rating data
+
+**Fact Tables** (Aggregated Metrics):
+- **fact_product_rating**: Product performance metrics (avg ratings)
+- **fact_sales_category**: Sales performance by category and user
+
+### Documentation
+For detailed ER diagrams, relationships, and architecture details:
+📊 **[data_warehouse_er_diagram.md](data_warehouse_er_diagram.md)**
 
 ## Development Workflow
 
